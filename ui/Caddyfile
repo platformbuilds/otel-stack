@@ -1,23 +1,29 @@
 :80 {
-	# Serve built assets
-	root * /srv
-	file_server
-
-	# SPA fallback for client-side routing
-	try_files {path} /index.html
-
-	# Reverse proxy to your Go backend (set API_BASE via env)
-	@api path /api* /healthz /readyz
-	reverse_proxy @api {$API_BASE} {
-		header_up Host {http.reverse_proxy.upstream.hostport}
+	# --- API first (proxy to backend) ---
+	handle /api/* {
+		# keep the full path: /api/... goes upstream unchanged
+		reverse_proxy {$API_BASE}
 	}
 
-	# Cache headers
+	handle /healthz {
+		reverse_proxy {$API_BASE}
+	}
+	handle /readyz {
+		reverse_proxy {$API_BASE}
+	}
+
+	# --- Static SPA last ---
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Cache headers with regex matchers (no glob *)
 	header {
-		# Don’t cache HTML (fast rollbacks)
-		@html path *.html
-		@assets path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.woff *.woff2
-		@immutable path *.js *.css
+		@html path_regexp html \.html$
+		@assets path_regexp assets \.(js|css|png|jpg|jpeg|gif|svg|woff2?)$
+		@immutable path_regexp immutable \.(js|css)$
 
 		@html Cache-Control "no-store"
 		@assets Cache-Control "public, max-age=31536000, immutable"
