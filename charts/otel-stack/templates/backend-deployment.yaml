@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "otel-stack.fullname" . }}-backend
+  labels: {{- include "otel-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels: {{- include "otel-stack.selectorLabelsBackend" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "otel-stack.selectorLabelsBackend" . | nindent 8 }}
+        {{- with .Values.backend.podLabels }}{{ toYaml . | nindent 8 }}{{- end }}
+      annotations:
+        {{- with .Values.backend.podAnnotations }}{{ toYaml . | nindent 8 }}{{- end }}
+    spec:
+      serviceAccountName: {{ default (include "otel-stack.fullname" .) .Values.serviceAccount.name }}
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            {{- range $k, $v := .Values.backend.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if .Values.backend.secretRefs.ch.enabled }}
+            - name: {{ default "CH_USER" .Values.backend.secretRefs.ch.usernameKey }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-ch" (include "otel-stack.fullname" $)) $.Values.backend.secretRefs.ch.name }}
+                  key: CH_USER
+            - name: {{ default "CH_PASS" .Values.backend.secretRefs.ch.passwordKey }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-ch" (include "otel-stack.fullname" $)) $.Values.backend.secretRefs.ch.name }}
+                  key: CH_PASS
+            {{- end }}
+            {{- range .Values.backend.extraEnv }}
+            - name: {{ .name }}{{ if .value }}{{ printf "\n              value: %q" .value }}{{ end }}
+            {{- end }}
+          envFrom:
+            {{- toYaml .Values.backend.extraEnvFrom | nindent 12 }}
+          livenessProbe: {{- toYaml .Values.backend.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml .Values.backend.readinessProbe | nindent 12 }}
+          resources: {{- toYaml .Values.backend.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.backend.extraVolumeMounts | nindent 12 }}
+      volumes:
+        {{- toYaml .Values.backend.extraVolumes | nindent 8 }}

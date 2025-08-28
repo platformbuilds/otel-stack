@@ -1,0 +1,6 @@
+apiVersion: v2
+name: otel-stack
+description: Single chart for OTEL backend (Go) + UI (Node/Caddy) with ingress, autoscaling, and secrets
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

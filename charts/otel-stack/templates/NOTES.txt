@@ -1,0 +1,23 @@
+Thank you for installing {{ include "otel-stack.name" . }}!
+
+Backend:
+  Service:  {{ include "otel-stack.fullname" . }}-backend.{{ .Release.Namespace }}.svc:{{ .Values.backend.service.port }}
+  Probes:   /healthz, /readyz
+  PromQL:   POST /api/metrics/query
+  LogsQL:   POST /api/logs/search
+  Traces:   /api/traces/*
+
+UI:
+  Service:  {{ include "otel-stack.fullname" . }}-ui.{{ .Release.Namespace }}.svc:{{ .Values.ui.service.port }}
+  Uses env  API_BASE -> backend (Caddy reverse proxy)
+
+Ingress:
+{{- if and .Values.ingress.enabled (index .Values.ingress.hosts 0).host }}
+  https://{{ (index .Values.ingress.hosts 0).host }}/
+{{- else }}
+  (not enabled or host unset)
+{{- end }}
+
+Tips:
+- Set .Values.ui.env.API_BASE to "http://{{ include "otel-stack.fullname" . }}-backend.{{ .Release.Namespace }}.svc:{{ .Values.backend.service.port }}"
+- Provide ClickHouse creds via Secret or .Values.backend.env.CH_USER/CH_PASS.

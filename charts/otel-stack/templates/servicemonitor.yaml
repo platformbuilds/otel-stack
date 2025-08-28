@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.servicemonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "otel-stack.fullname" . }}-backend
+  labels:
+    {{- include "otel-stack.labels" . | nindent 4 }}
+    {{- toYaml .Values.monitoring.servicemonitor.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "otel-stack.selectorLabelsBackend" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.servicemonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.servicemonitor.scrapeTimeout }}
+{{- end }}
