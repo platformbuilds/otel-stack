@@ -1,25 +1,28 @@
--- Attribute value dictionary for common keys (extend as needed)
-CREATE TABLE IF NOT EXISTS default.attr_values
+-- Target table for results
+CREATE TABLE default.attr_values
 (
-  WindowStart DateTime,
-  Key LowCardinality(String),
-  Val LowCardinality(String),
-  Cnt UInt64
+    WindowStart   DateTime,
+    Key           String,
+    Val           String,
+    Cnt           UInt64
 )
-ENGINE = SummingMergeTree()
+ENGINE = SummingMergeTree
 ORDER BY (WindowStart, Key, Val);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS default.mv_attr_values
-TO default.attr_values AS
-WITH keys AS (
-  SELECT array('http.method','deployment.environment','db.system','http.route') AS k
-)
+-- MV definition
+CREATE MATERIALIZED VIEW default.mv_attr_values
+TO default.attr_values
+AS
+WITH
+    -- List of interesting attribute keys
+    ['http.method','deployment.environment','db.system','http.route'] AS keys
 SELECT
-  toStartOfHour(t.Timestamp) AS WindowStart,
-  k AS Key,
-  JSON_VALUE(t.SpanAttributes, concat('$.', k)) AS Val,
-  count() AS Cnt
-FROM default.otel_traces t
-ARRAY JOIN (SELECT * FROM keys).k AS k
-WHERE Val != ''
+    toStartOfHour(Timestamp)                          AS WindowStart,
+    k                                                 AS Key,
+    JSON_VALUE(SpanAttributes, concat('$.', k))       AS Val,
+    count()                                           AS Cnt
+FROM default.otel_traces
+-- expand the list of keys (array join makes one row per element)
+ARRAY JOIN keys AS k
+WHERE Val IS NOT NULL
 GROUP BY WindowStart, Key, Val;
