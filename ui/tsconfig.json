@@ -10,6 +10,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "jsx": "react-jsx",
+    "types": ["vite/client", "react", "react-dom"],
     "baseUrl": ".",
     "paths": {}
   }
