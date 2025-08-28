@@ -1,4 +1,3 @@
--- Target table for results
 CREATE TABLE default.attr_values
 (
     WindowStart   DateTime,
@@ -9,20 +8,17 @@ CREATE TABLE default.attr_values
 ENGINE = SummingMergeTree
 ORDER BY (WindowStart, Key, Val);
 
--- MV definition
 CREATE MATERIALIZED VIEW default.mv_attr_values
 TO default.attr_values
 AS
-WITH
-    -- List of interesting attribute keys
-    ['http.method','deployment.environment','db.system','http.route'] AS keys
+WITH ['http.method','deployment.environment','db.system','http.route'] AS keys
 SELECT
-    toStartOfHour(Timestamp)                          AS WindowStart,
-    k                                                 AS Key,
-    JSON_VALUE(SpanAttributes, concat('$.', k))       AS Val,
-    count()                                           AS Cnt
+    toStartOfHour(Timestamp)                                      AS WindowStart,
+    k                                                             AS Key,
+    v                                                             AS Val,
+    count()                                                       AS Cnt
 FROM default.otel_traces
--- expand the list of keys (array join makes one row per element)
-ARRAY JOIN keys AS k
-WHERE Val IS NOT NULL
+ARRAY JOIN mapKeys(SpanAttributes)   AS k,
+           mapValues(SpanAttributes) AS v
+WHERE k IN keys AND v IS NOT NULL AND v != ''
 GROUP BY WindowStart, Key, Val;
