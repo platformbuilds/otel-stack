@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import { flamegraph } from 'd3-flame-graph'
 
-// Shape of your flame nodes
 type FlameNode = {
   name: string
   value: number
@@ -16,15 +15,13 @@ export default function Flame({ data }: { data: FlameNode }) {
     if (!data || !ref.current) return
     ref.current.innerHTML = ''
 
-    // cast to any so TS doesn’t complain about missing .value()
-    const chart = (flamegraph() as any)
+    const chart = flamegraph()
       .width(1000)
       .height(480)
-      .label((d: any) => d.data.name)
-      .value((d: any) => d.data.value)
+      .label(d => d.data.name)
+      .value(d => d.data.value)
 
     d3.select(ref.current).datum(data).call(chart)
-
   }, [data])
 
   return <div ref={ref} />

@@ -27,7 +27,7 @@ backend:
     repository: platformbuilds/mirador-backend
     tag: latest
     pullPolicy: IfNotPresent
-  replicaCount: 2
+  replicaCount: 1
   service:
     type: ClusterIP
     port: 8080
@@ -85,7 +85,7 @@ ui:
     repository: platformbuilds/mirador-ui
     tag: latest
     pullPolicy: IfNotPresent
-  replicaCount: 2
+  replicaCount: 1
   service:
     type: ClusterIP
     port: 80

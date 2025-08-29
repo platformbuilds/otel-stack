@@ -13,5 +13,9 @@
     "types": ["vite/client", "react", "react-dom"],
     "baseUrl": ".",
     "paths": {}
-  }
+  },
+  "include": [
+    "src",
+    "src/types"
+  ]
 }
